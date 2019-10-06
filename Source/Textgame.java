@@ -1,10 +1,66 @@
 import java.util.Scanner;
 import java.util.Arrays;
+import java.awt.*;
+import javax.swing.*;
+
+class TerminalOutput extends Thread {
+
+int speed_ = Textgame.speed_;
+char[] text_ = Textgame.text_;
+
+@Override
+public void run() {
+        try {
+                for (int iter = 0; iter < text_.length; iter++) {
+                        System.out.print(text_[iter]);
+                        try {
+                                Thread.sleep(speed_);
+                        } catch(Exception e) {
+                                System.out.println("Error");
+                        }
+                }
+        } catch(Exception e) {
+                System.out.println("Error in terminal thread");
+        }
+}
+}
+
+class WindowOutput extends Thread {
+
+int speed_ = Textgame.speed_;
+char[] text_ = Textgame.text_;
+char[] gameText_ = Textgame.gameText_;
+JTextArea gameOutput = Textgame.gameOutput;
+
+@Override
+public void run() {
+        try {
+                // thread things
+                for (int iter = 0; iter < gameText_.length; iter++) {
+                        gameOutput.append(String.valueOf(gameText_[iter]));
+                        gameOutput.setCaretPosition(gameOutput.getDocument().getLength());
+
+                        try {
+                                Thread.sleep(speed_);
+                        } catch(Exception e) {
+                                System.out.println("Error");
+                        }
+                }
+        } catch(Exception e) {
+                System.out.println("Error in terminal thread");
+        }
+}
+}
 
 public class Textgame {
 
 private final static int MAX_WIDTH = 80;
 public static int location[] = {0,0};
+public static JTextArea gameOutput = new JTextArea();//(50,42);
+public static int speed_ = 0;
+public static char[] text_;
+public static char[] gameText_;
+
 String text = "";
 String speed = "normal";
 
@@ -19,6 +75,7 @@ public static void main(String[] args) {
         //  getInput(input);
         //}
 
+        setupWindow();
         Game.main();
 
 }
@@ -115,12 +172,13 @@ public static String getInput(String input) {
 
 public static void gprint(String text, String speed) {
 
+        String gameText = text;
         text = wrap(text);
 
         int iter = 0;
         int check = 0;
-        int speed_ = 0;
-        char[] text_ = text.toCharArray();
+        text_ = text.toCharArray();
+        gameText_ = gameText.toCharArray();
         String message = "";
 
         switch(speed) {
@@ -135,18 +193,17 @@ public static void gprint(String text, String speed) {
                 break;
         case ("instant"):
                 System.out.println(text);
+                gameOutput.append(gameText);
+                gameOutput.setCaretPosition(gameOutput.getDocument().getLength());
                 return;
         }
 
-        for (iter = 0; iter < text_.length; iter++) {
-                System.out.print(text_[iter]);
+        Thread tgOut = new TerminalOutput();
+        Thread wgOut = new WindowOutput();
 
-                try {
-                        Thread.sleep(speed_);
-                } catch(Exception e) {
-                        System.out.println("Error");
-                }
-        }
+        tgOut.start();
+        wgOut.start();
+
         return;
 }
 
@@ -182,5 +239,31 @@ public static String wrap(String text) {
         }
 
         return resultText;
+}
+
+public static void setupWindow() {
+
+        JFrame frame = new JFrame("Text Game");
+        JScrollPane gameOutputScroll = new JScrollPane(gameOutput);
+
+        //DefaultCaret gameCaret = (DefaultCaret)gameOutput.getCaret();
+        //gameCaret.setUpdatePolice(DefaultCaret.ALWAYS_UPDATE);
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        //gameOutput.setPreferredSize(new Dimension(256, 256));
+        gameOutput.setEditable(false);
+        gameOutput.setLineWrap(true);
+        gameOutput.setWrapStyleWord(true);
+        //frame.getContentPane().add(gameOutput, BorderLayout.CENTER);
+
+        gameOutputScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        gameOutputScroll.setPreferredSize(new Dimension (512, 256));
+        frame.getContentPane().add(gameOutputScroll, BorderLayout.CENTER);
+
+        frame.setLocationRelativeTo(null);
+        frame.pack();
+        frame.setVisible(true);
+
 }
 }
